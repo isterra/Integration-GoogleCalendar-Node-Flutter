@@ -7,3 +7,7 @@
 -In Credentials select Manage service accounts>Actions>Create Key>Json
 
 -Edit googleConfig with credentials.json
+
+-Change your calendar to public
+
+-Add client_email in Settings>Compart. w / special people>add people 
