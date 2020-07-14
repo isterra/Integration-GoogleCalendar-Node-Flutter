@@ -3,10 +3,9 @@ const googleConfig = require('../config/googleConfig')
 // req body row json{
 //     {
 //         "summary":"Evento Teste",
-//         "location":"local",
 //         "description":"Teste pra adicionar evento",
-//         "startTime":"2020-07-12T13:00:00-03:00",
-//         "endTime":"2020-07-12T14:00:00-03:00"
+//         "date":"27/02/2000",
+//         "startTime":"14"
 //     }
 // }
 
@@ -24,17 +23,20 @@ module.exports = {
             project: googleConfig.GOOGLE_PROJECT_NUMBER,
             auth: jwtClient
         });
-
+        var date = info.date;
+        date = date.split('/');
+        var startTime = `${date[2]}-${date[1]}-${date[0]}T${info.startTime}:00:00-03:00`
+        var endTime = `${date[2]}-${date[1]}-${date[0]}T${parseInt(info.startTime) + parseInt(1)}:00:00-03:00`
         calendar.events.list({
             calendarId: googleConfig.GOOGLE_CALENDAR_ID,
             auth: jwtClient,
             orderBy: 'startTime',
             singleEvents: true,
-            timeMin: info.startTime,
-            timeMax: info.endTime,
+            timeMin: startTime,
+            timeMax: endTime,
         }, async function (err, event) {
             if (err)
-                res.staus(400).json(err)
+                res.status(400).json({ error: err.message })
             else {
                 if (event.data.items.length > 0)
                     res.status(400).send({ error: "event unavailable" })
@@ -48,21 +50,22 @@ module.exports = {
                             description: info.description,
                             start:
                             {
-                                dateTime: info.startTime,
+                                dateTime: startTime,
                             },
                             end: {
-                                dateTime: info.endTime,
+                                dateTime: endTime,
                             },
                         }
 
                     }, function (err, event) {
                         if (err) {
-                            return res.status(400).json({ message: "Error", error: err.message })
+                            res.status(400).json({ message: "Error", error: err.message })
                         }
-                        return res.status(200).json({
-                            "eventId": event.data.id,
-                            "data": event.data
-                        })
+                        else
+                            res.status(200).json({
+                                "eventId": event.data.id,
+                                "data": event.data
+                            })
                     })
                 }
             }
