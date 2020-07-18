@@ -11,7 +11,16 @@ const googleConfig = require('../config/googleConfig')
 
 module.exports = {
     async create(req, res) {
-        const info = req.body;
+        const { summary, description, date, startTime } = req.body;
+        if (!summary) return res.status(400).json({ "error": "Summary not found" })
+        if (!description) return res.status(400).json({ "error": "Description not found" })
+        if (!date) return res.status(400).json({ "error": "Date not found" })
+        if (!startTime) return res.status(400).json({ "error": "StartTime not found" })
+        var format = /(\d{2})[-.\/](\d{2})[-.\/](\d{4})/.exec(date);
+        if (format == null) {
+            return res.status(400).json({ "error": "Invalid date format" })
+        }
+
         const jwtClient = new google.auth.JWT(
             googleConfig.GOOGLE_CLIENT_EMAIL,
             null,
@@ -23,34 +32,45 @@ module.exports = {
             project: googleConfig.GOOGLE_PROJECT_NUMBER,
             auth: jwtClient
         });
-        var date = info.date;
-        date = date.split('/');
-        var startTime = `${date[2]}-${date[1]}-${date[0]}T${info.startTime}:00:00-03:00`
-        var endTime = `${date[2]}-${date[1]}-${date[0]}T${parseInt(info.startTime) + parseInt(1)}:00:00-03:00`
+        destructuringDate = date.split('/');
+        now = new Date();
+        day = now.getUTCDate();
+        month = now.getMonth() + 1;
+        if (month > destructuringDate[1]) {
+            return res.status(400).json({ error: "Invalid month" })
+        }
+        else if (month == destructuringDate[1] && day > destructuringDate[0]) {
+            return res.status(400).json({ error: "Invalid day" })
+        }
+        var start = `${destructuringDate[2]}-${destructuringDate[1]}-${destructuringDate[0]}T${startTime}:00:00-03:00`
+        var endTime = `${destructuringDate[2]}-${destructuringDate[1]}-${destructuringDate[0]}T${parseInt(startTime) + parseInt(1)}:00:00-03:00`
         calendar.events.list({
             calendarId: googleConfig.GOOGLE_CALENDAR_ID,
             auth: jwtClient,
             orderBy: 'startTime',
             singleEvents: true,
-            timeMin: startTime,
+            timeMin: start,
             timeMax: endTime,
         }, async function (err, event) {
             if (err)
                 res.status(400).json({ error: err.message })
             else {
                 if (event.data.items.length > 0)
-                    res.status(400).send({ error: "event unavailable" })
+                    res.status(400).send({
+                        error: "Event unavailable",
+                        message: "This hour is already busy"
+                    })
                 else {
                     calendar.events.insert({
                         auth: jwtClient,
                         calendarId: googleConfig.GOOGLE_CALENDAR_ID,
                         requestBody: {
                             status: "confirmed",
-                            summary: info.summary,
-                            description: info.description,
+                            summary: summary,
+                            description: description,
                             start:
                             {
-                                dateTime: startTime,
+                                dateTime: start,
                             },
                             end: {
                                 dateTime: endTime,

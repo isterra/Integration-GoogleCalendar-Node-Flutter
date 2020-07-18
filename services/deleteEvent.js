@@ -4,6 +4,7 @@ const googleConfig = require('../config/googleConfig')
 module.exports = {
     async delete(req, res) {
         const { eventId } = req.body;
+        if (!eventId) return res.status(400).json({ error: "EventId not found" })
         const jwtClient = new google.auth.JWT(
             googleConfig.GOOGLE_CLIENT_EMAIL,
             null,
