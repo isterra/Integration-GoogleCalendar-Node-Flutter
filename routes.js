@@ -8,7 +8,7 @@ const deleteEvent = require('./services/deleteEvent')
 const updateEvent = require('./services/updateEvent')
 
 routes.post('/availableTimes', availableTimes.read)
-routes.post('/calendarEvents', listCalendarEventes.read)
+routes.get('/calendarEvents', listCalendarEventes.read)
 routes.post('/addEvent', addEvent.create)
 routes.get('/getEvent', getEvent.get)
 routes.delete('/deleteEvent', deleteEvent.delete)
